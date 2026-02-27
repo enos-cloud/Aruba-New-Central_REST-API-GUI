@@ -22,3 +22,18 @@ SOFTWARE.
 DISCLAIMER: 
 This is an unofficial community tool and is NOT affiliated with, officially supported by, or endorsed by Hewlett Packard Enterprise (HPE) or Aruba Networks. Use at your own risk. 
 All reference materials are derived directly from the official developer portal: https://developer.arubanetworks.com/new-central/docs/about
+
+========================================================================
+
+MIT 授權條款 (MIT License 中文翻譯版 - 僅供參考，效力以原文為準)
+
+特此授與任何取得本軟體及相關文件檔案（以下簡稱「軟體」）副本之人員免費使用本軟體之權利，包含但不限於使用、複製、修改、合併、發布、散布、再授權及/或銷售本軟體副本之權利，並允許軟體提供之對象從事上述行為，但需符合下列條件：
+
+上述版權聲明與本許可聲明必須包含於本軟體之所有副本或實質部分中。
+
+本軟體以「現況」提供，不附帶任何明示或暗示之保證，包含但不限於適銷性、特定目的適用性與未侵害第三方權利之保證。在任何情況下，作者或版權所有者皆不對因本軟體或本軟體之使用或其他交易而產生、引起或與之相關的任何索賠、損害或其他責任負責，無論是基於合約、侵權或其他形式之訴訟。
+
+---
+免責聲明：
+這是一個非官方的社群輔助工具，與 Hewlett Packard Enterprise (HPE) 或 Aruba Networks 無任何官方從屬、贊助或背書關係。使用者需自行承擔使用風險。
+本專案的所有參考與對接材料皆直接來自官方開發者入口網站：https://developer.arubanetworks.com/new-central/docs/about
