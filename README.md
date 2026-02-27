@@ -19,6 +19,17 @@
 | *(未來開發功能)* | ...等候擴充中 |
 
 ---
+## 免責聲明與開發者參考資源
+> [!WARNING]  
+> **非官方工具聲明 (Unofficial Tool Statement)**  
+> 本專案為獨立開發者/社群因應網路維運需求所攥寫之開源輔助工具，**非 HPE Aruba 官方正式發佈的軟體產品**。
+> 所有底層 API 拋轉與操作邏輯皆是基於原廠公開的開發者網站內容與 REST API 規範進行開發與封裝。
+
+- Aruba 開發者入口與 API 參考依據：[Aruba Developer Portal - New Central](https://developer.arubanetworks.com/new-central/docs/about)
+
+使用者在正式營運環境 (Production) 中執行包含 DELETE、POST 等破壞性或修改設定之請求前，請務必先於測試環境 (Lab/Staging) 進行驗證，以確保網路服務不受預期外影響。
+
+---
 ## 開發維護須知
 - 所有 GUI 程式推薦使用 Python 的 `tkinter` 作為輕量級介面。
 - 網路連線與 API 請求統一使用 `requests` 函式庫實作。
