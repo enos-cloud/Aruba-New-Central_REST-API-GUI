@@ -27,7 +27,7 @@ pip install requests
 ## 使用教學
 請在終端機或命令提示字元進入該資料夾後執行底下指令啟動視窗介面：
 ```bash
-python "Hardware Modules Profile.py"
+python "Hardware_Modules_Profile.py"
 ```
 
 ### 1. 身分驗證 (Authentication)
