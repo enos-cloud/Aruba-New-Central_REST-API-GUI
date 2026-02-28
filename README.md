@@ -15,7 +15,7 @@
 
 | 工具分類資料夾 | 簡介與主要用途 |
 | :--- | :--- |
-| **📁 [Hardware Modules](./Hardware%20Modules/)** | 提供針對 AOS-CX (如 8325, 8360, 8400, 10000) 交換器的 `system interface-group` 模組相關設定 (包含創建、查詢、刪除 25G/50G/100G 群組速率分配)。 |
+| **📁 [Hardware Modules](./Hardware%20Modules/)** | 提供針對 AOS-CX (如 8325, 8360, 8400, 10000) 交換器的 `system interface-group` 模組相關設定 (包含創建、查詢、刪除 25G/50G/100G 群組速率分配)，**並支援將配置直接下發指派至設備 (Profile Assignment)**。 |
 | *(未來開發功能)* | ...等候擴充中 |
 
 ---
@@ -26,6 +26,10 @@
 > 所有底層 API 拋轉與操作邏輯皆是基於原廠公開的開發者網站內容與 REST API 規範進行開發與封裝。
 
 - Aruba 開發者入口與 API 參考依據：[Aruba Developer Portal - New Central](https://developer.arubanetworks.com/new-central/docs/about)
+
+> [!NOTE]
+> **關於 Config Assignment 的底層 API 選用說明**
+> 官方 Developer Portal 上提供的 `config-assignments` 端點目前仍為 Alpha/Select Availability，實測時可能尚未在所有 Cluster (如 jp1) 啟用並回傳 `400 Invalid URL`。因此，本專案的「Profile Assignment」功能模組**目前底層改採 Aruba 內部隱藏的正式端點 `POST /network-config/v1alpha1/scope-maps` 進行實作**。當未來 Aruba 正式全面開放新版 endpoint 時，將會發佈更新調整。
 
 使用者在正式營運環境 (Production) 中執行包含 DELETE、POST 等破壞性或修改設定之請求前，請務必先於測試環境 (Lab/Staging) 進行驗證，以確保網路服務不受預期外影響。
 

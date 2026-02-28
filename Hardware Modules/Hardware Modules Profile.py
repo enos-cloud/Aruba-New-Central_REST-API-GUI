@@ -33,17 +33,20 @@ class ArubaNewCentralAPIConfigurator:
         self.notebook = ttk.Notebook(main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True)
         
-        # 建立兩個分頁框架
+        # 建立三個分頁框架
         self.tab_auth = ttk.Frame(self.notebook)
         self.tab_hw = ttk.Frame(self.notebook)
+        self.tab_assign = ttk.Frame(self.notebook)
         
         # 將分頁框架加入 Notebook 中並命名
         self.notebook.add(self.tab_auth, text='1. Authentication (身分驗證)')
         self.notebook.add(self.tab_hw, text='2. Hardware Module Profile (硬體模組設定)')
+        self.notebook.add(self.tab_assign, text='3. Profile Assignment (配置指派)')
         
-        # 呼叫設定方法來初始化兩個分頁的內容
+        # 呼叫設定方法來初始化三個分頁的內容
         self.setup_auth_tab()
         self.setup_hw_tab()
+        self.setup_assign_tab()
 
     def setup_auth_tab(self):
         # ---------------- AUTHENTICATION TAB (身分驗證分頁設計) ----------------
@@ -320,6 +323,203 @@ class ArubaNewCentralAPIConfigurator:
         self.response_text.delete("1.0", tk.END)
         self.response_text.insert("1.0", text)
         self.response_text.config(state=tk.DISABLED)
+
+    def setup_assign_tab(self):
+        # ---------------- PROFILE ASSIGNMENT TAB (配置指派分頁設計) ----------------
+        frame = ttk.Frame(self.tab_assign, padding="20 20 20 20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # 顯示當前 Token 區塊
+        token_preview_frame = ttk.Frame(frame)
+        token_preview_frame.pack(fill=tk.X, pady=(0, 15))
+        ttk.Label(token_preview_frame, text="目前使用的 Token:").pack(side=tk.LEFT)
+        self.assign_token_entry = ttk.Entry(token_preview_frame, textvariable=self.token_var, state='readonly', width=65)
+        self.assign_token_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        
+        # 硬體模組設定檔名稱 (與第二頁綁定同一個變數)
+        ttk.Label(frame, text="要指派的硬體模組名稱 (Profile Name):").pack(anchor=tk.W, pady=(5, 2))
+        ttk.Entry(frame, textvariable=self.module_var, state='readonly', width=80).pack(fill=tk.X, pady=2)
+
+        # 獲取設備清單按鈕
+        device_frame = ttk.Frame(frame)
+        device_frame.pack(fill=tk.X, pady=(15, 5))
+        ttk.Label(device_frame, text="選擇目標設備 (Target Device):").pack(anchor=tk.W, side=tk.TOP)
+        
+        # 設備下拉選單與獲取按鈕
+        self.device_list = []
+        self.device_combo = ttk.Combobox(device_frame, state='readonly', width=75)
+        self.device_combo.pack(side=tk.LEFT, pady=2, padx=(0, 10))
+        
+        ttk.Button(device_frame, text="取得設備清單 (Fetch Devices)", command=self.fetch_devices).pack(side=tk.LEFT)
+        
+        # 執行指派區域
+        assign_btn_frame = ttk.Frame(frame)
+        assign_btn_frame.pack(fill=tk.X, pady=15)
+        ttk.Button(assign_btn_frame, text="執行綁定 (Assign Profile)", command=self.assign_profile).pack(side=tk.LEFT)
+        
+        # API 回應結果顯示區塊
+        response_frame = ttk.Frame(frame)
+        response_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        
+        header_frame = ttk.Frame(response_frame)
+        header_frame.pack(fill=tk.X)
+        ttk.Label(header_frame, text="指派操作結果 (Response):").pack(side=tk.LEFT)
+        
+        self.assign_status_var = tk.StringVar(value="尚未執行 (Idle)")
+        self.assign_status_label = ttk.Label(header_frame, textvariable=self.assign_status_var, font=('Helvetica', 10, 'bold'), foreground='blue')
+        self.assign_status_label.pack(side=tk.RIGHT)
+        
+        self.assign_response_text = tk.Text(response_frame, height=8, width=80, state=tk.DISABLED, bg="#ffffff", fg="#000000", font=('Courier', 10))
+        self.assign_response_text.pack(fill=tk.BOTH, expand=True, pady=2)
+
+    def set_assign_response_text(self, text):
+        self.assign_response_text.config(state=tk.NORMAL)
+        self.assign_response_text.delete("1.0", tk.END)
+        self.assign_response_text.insert("1.0", text)
+        self.assign_response_text.config(state=tk.DISABLED)
+
+    def fetch_devices(self):
+        """從 Central 抓取可用的設備清單"""
+        token = self.token_var.get().strip()
+        if not token:
+            messagebox.showwarning("憑證遺失 (Token Missing)", "缺少 Token！請先回到「1. Authentication」分頁取得 Token。")
+            return
+            
+        base_url = self.url_var.get().strip()
+        if base_url.endswith("/"): base_url = base_url[:-1]
+        
+        # 使用 devices API 抓取
+        api_path = f"{base_url}/network-config/v1alpha1/devices"
+        headers = {
+            "accept": "application/json",
+            "authorization": f"Bearer {token}"
+        }
+        
+        self.assign_status_var.set("正在獲取設備清單...")
+        self.assign_status_label.config(foreground="blue")
+        self.root.update_idletasks()
+        
+        try:
+            response = requests.get(api_path, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                self.device_list = data.get("devices", []) if "devices" in data else data.get("items", [])
+                
+                # 組合下拉選單格式 "Hostname (Serial/MAC) - Persona"
+                combo_values = []
+                for idx, dev in enumerate(self.device_list):
+                    name = dev.get("name") or dev.get("siteName") or "Unknown"
+                    serial = dev.get("serial") or dev.get("scopeName") or dev.get("mac") or "Unknown"
+                    persona = dev.get("persona") or dev.get("deviceType") or "Unknown"
+                    
+                    # 隱藏儲存原始 index 到選項中，或者簡單依賴 index 選擇
+                    combo_values.append(f"{name} ({serial}) [{persona}]")
+                
+                self.device_combo['values'] = combo_values
+                if combo_values:
+                    self.device_combo.current(0)
+                    self.assign_status_var.set(f"成功獲取 {len(combo_values)} 台設備")
+                    self.assign_status_label.config(foreground="green")
+                else:
+                    self.assign_status_var.set("未找到設備")
+                    self.assign_status_label.config(foreground="orange")
+            else:
+                self.assign_status_var.set("設備清單獲取失敗")
+                self.assign_status_label.config(foreground="red")
+                self.set_assign_response_text(response.text)
+        except Exception as e:
+            self.assign_status_var.set("網路或執行錯誤")
+            self.assign_status_label.config(foreground="red")
+            self.set_assign_response_text(str(e))
+
+    def assign_profile(self):
+        """將設定檔指派給選擇的設備 (使用 scope-maps API)"""
+        token = self.token_var.get().strip()
+        if not token:
+            messagebox.showwarning("憑證遺失", "缺少 Token！")
+            return
+            
+        selected_index = self.device_combo.current()
+        if selected_index == -1 or not self.device_list:
+            messagebox.showwarning("無效選擇", "請先取得並選擇一台目標設備。")
+            return
+            
+        module_name = self.module_var.get().strip()
+        if not module_name:
+            messagebox.showwarning("缺少輸入", "請先確認「硬體模組名稱」是否有值匯入。")
+            return
+            
+        target_device = self.device_list[selected_index]
+        
+        # 關鍵參數：Scope ID 與 Persona mapping
+        # 嘗試從 API 回傳中獲取 scopeId 和 persona
+        scope_id = target_device.get("scopeId") or target_device.get("id")
+        # 若 API 沒有明確返回 persona, 我們可以做 heuristic mapping
+        persona = target_device.get("persona")
+        if not persona:
+            device_type = target_device.get("deviceType")
+            device_group = target_device.get("deviceGroupName", "").upper()
+            if device_type == "SWITCH":
+                if "CORE" in device_group:
+                    persona = "CORE_SWITCH"
+                elif "AGG" in device_group:
+                    persona = "AGG_SWITCH"
+                else:
+                    persona = "ACCESS_SWITCH" # 預設交換器 persona
+            elif device_type == "IAP":
+                persona = "CAMPUS_AP"
+            else:
+                persona = "ACCESS_SWITCH" # 保底預設
+                
+        if not scope_id:
+            messagebox.showerror("資料錯誤", "無法從所選設備中解析出 scope_id。")
+            return
+
+        base_url = self.url_var.get().strip()
+        if base_url.endswith("/"): base_url = base_url[:-1]
+        
+        api_path = f"{base_url}/network-config/v1alpha1/scope-maps"
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "authorization": f"Bearer {token}"
+        }
+        
+        # Payload: 關鍵資源字串為 "hardware-modules/實例名稱"
+        payload = {
+            "scope-map": [
+                {
+                    "scope-name": str(scope_id),
+                    "persona": persona,
+                    "resource": f"hardware-modules/{module_name}"
+                }
+            ]
+        }
+        
+        self.assign_status_var.set("正在執行指派 (Assigning)...")
+        self.assign_status_label.config(foreground="blue")
+        self.root.update_idletasks()
+        self.set_assign_response_text(f"送出 Payload:\n{json.dumps(payload, indent=2)}\n\n等待回應中...")
+        
+        try:
+            response = requests.post(api_path, json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                self.assign_status_var.set("指派成功 (Success)")
+                self.assign_status_label.config(foreground="green")
+            else:
+                self.assign_status_var.set(f"失敗: HTTP {response.status_code}")
+                self.assign_status_label.config(foreground="red")
+                
+            try:
+                self.set_assign_response_text(json.dumps(response.json(), indent=4))
+            except:
+                self.set_assign_response_text(response.text)
+                
+        except Exception as e:
+            self.assign_status_var.set("網路或執行錯誤")
+            self.assign_status_label.config(foreground="red")
+            self.set_assign_response_text(str(e))
 
 if __name__ == "__main__":
     # Tkinter 主視窗啟動點
